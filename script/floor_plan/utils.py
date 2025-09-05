@@ -4,41 +4,44 @@ import copy
 from scipy import ndimage as ndi
 from skimage.morphology._skeletonize_cy import (_skeletonize_loop,_table_lookup_index)
 
-import pytraversal
-
 _eight_connect = ndi.generate_binary_structure(2, 1)
 
 def prepareRTObj(map):
+  """占位函数，保持兼容性"""
   gridsize = (map.shape[0],map.shape[1],0)
-  return pytraversal.RTObj((0,0,0),gridsize,gridsize)
+  return None
 
 def laserscan_sim(map, point, range=9999.0, resolution=1.0, fov=(0,360)):
+  """使用纯Python实现的激光雷达模拟"""
   ranges = []
-  gridsize = (map.shape[0],map.shape[1],0)
-  rto = pytraversal.RTObj((0,0,0),gridsize,gridsize)
   
   for deg in np.arange(fov[0],fov[1],resolution):
-    rto.reset()
-    destination = getRayVector(deg,range,point[0],point[1])
-    rto.setup((point[0],point[1],0),(destination[0],destination[1],0))
-    rto.traverse_once()
-    hit = False
-    tmax = None
-    while(True):
-      ret = rto.traverse_once().astype('int')
-      if ret.size == 0:
+    # 计算射线方向
+    rad = np.deg2rad(deg)
+    dx = np.cos(rad)
+    dy = np.sin(rad)
+    
+    # 射线追踪
+    x, y = point[0], point[1]
+    step = 0.1
+    distance = 0
+    
+    while distance < range:
+      x += dx * step
+      y += dy * step
+      distance += step
+      
+      # 检查边界
+      if x < 0 or x >= map.shape[1] or y < 0 or y >= map.shape[0]:
         break
-      if not map[ret[0], ret[1]]:
-        hit = True
-        if tmax is not None:
-          if tmax[0] < tmax[1]:
-            ranges.append(tmax[0]*range)
-          else:
-            ranges.append(tmax[1]*range)
+      
+      # 检查碰撞
+      if not map[int(y), int(x)]:
+        ranges.append(distance)
         break
-      tmax = rto.get_tmax()
-    if not hit:
-      print(deg,"Hit boundary, something wrong.")
+    else:
+      # 如果没有碰撞，使用最大距离
+      ranges.append(range)
 
   return ranges
 

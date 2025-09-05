@@ -3,7 +3,17 @@ import numpy as np
 from skimage.morphology import medial_axis
 
 from floor_plan.utils import *
-from sensor_msgs.msg import LaserScan
+
+# 简单的LaserScan类，替代ROS依赖
+class LaserScan:
+    def __init__(self):
+        self.header = None
+        self.angle_min = 0.0
+        self.angle_max = 0.0
+        self.angle_increment = 0.0
+        self.range_min = 0.0
+        self.range_max = 0.0
+        self.ranges = []
 
 RESIZE_RATIO = 5
 DISTANCE_THRESHOLD = 5
